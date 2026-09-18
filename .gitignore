@@ -1,5 +1,7 @@
 # Dependencies
 node_modules/
+.agents/skills/hallmark/
+skills-lock.json
 package-lock.json
 yarn.lock
 pnpm-lock.yaml
