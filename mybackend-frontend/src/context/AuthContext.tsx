@@ -1,10 +1,14 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import axios from 'axios';
+import { authService } from '../services/api/auth.service';
 
 interface User {
     id: string;
     email: string;
-    name: string;
+    name?: string;
+    firstName?: string;
+    lastName?: string;
+    username?: string;
     role: string;
 }
 
@@ -23,20 +27,33 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
 
+    const normalizeUser = (userData: User) => {
+        const derivedName =
+            userData.name ||
+            [userData.firstName, userData.lastName].filter(Boolean).join(' ');
+        return {
+            ...userData,
+            name: derivedName || userData.email,
+        };
+    };
+
     useEffect(() => {
         const initAuth = async () => {
             const token = localStorage.getItem('token');
             if (token) {
                 try {
                     axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-                    // In a real app, we would fetch the user profile here
-                    // const user = await authService.getCurrentUser();
-                    // setUser(user);
+                    const response = await authService.getCurrentUser();
+                    const payload = response?.data ?? response;
+                    const userData = payload?.data ?? payload;
 
-                    // For now, use stored user or mock
                     const storedUser = localStorage.getItem('user');
-                    if (storedUser) {
-                        setUser(JSON.parse(storedUser));
+                    const mergedUser = storedUser
+                        ? { ...JSON.parse(storedUser), ...userData }
+                        : userData;
+
+                    if (mergedUser) {
+                        setUser(normalizeUser(mergedUser));
                     }
                     setIsAuthenticated(true);
                 } catch (error) {
@@ -52,10 +69,31 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         initAuth();
     }, []);
 
+    useEffect(() => {
+        const interceptorId = axios.interceptors.response.use(
+            (response) => response,
+            (error) => {
+                if (error?.response?.status === 401) {
+                    localStorage.removeItem('token');
+                    localStorage.removeItem('user');
+                    setUser(null);
+                    setIsAuthenticated(false);
+                    delete axios.defaults.headers.common['Authorization'];
+                }
+                return Promise.reject(error);
+            }
+        );
+
+        return () => {
+            axios.interceptors.response.eject(interceptorId);
+        };
+    }, []);
+
     const login = (token: string, userData: User) => {
+        const normalizedUser = normalizeUser(userData);
         localStorage.setItem('token', token);
-        localStorage.setItem('user', JSON.stringify(userData));
-        setUser(userData);
+        localStorage.setItem('user', JSON.stringify(normalizedUser));
+        setUser(normalizedUser);
         setIsAuthenticated(true);
         axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
     };
@@ -75,6 +113,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     );
 };
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const useAuth = () => {
     const context = useContext(AuthContext);
     if (context === undefined) {

@@ -22,12 +22,12 @@ export const Footer: React.FC = () => {
                     </div>
 
                     <div>
-                        <h3 className="font-bold text-slate-900 mb-4">Platform</h3>
-                        <ul className="space-y-3 text-sm text-slate-600">
-                            <li><Link to="/books" className="hover:text-primary transition-colors">Read Books</Link></li>
-                            <li><Link to="/write" className="hover:text-primary transition-colors">Write a Book</Link></li>
+                        <h3 className="font-semibold text-slate-900 mb-4">Platform</h3>
+                        <ul className="space-y-2 text-sm text-slate-600">
+                            <li><Link to="/start-writing" className="hover:text-primary transition-colors">Write a Book</Link></li>
+                            <li><Link to="/books" className="hover:text-primary transition-colors">Browse Books</Link></li>
+                            <li><Link to="/dashboard" className="hover:text-primary transition-colors">My Dashboard</Link></li>
                             <li><Link to="/pricing" className="hover:text-primary transition-colors">Pricing</Link></li>
-                            <li><Link to="/schools" className="hover:text-primary transition-colors">For Schools</Link></li>
                         </ul>
                     </div>
 

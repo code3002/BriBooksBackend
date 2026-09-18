@@ -14,13 +14,15 @@ model User {
   id            String   @id @default(uuid())
   email         String   @unique
   username      String   @unique
-  passwordHash  String
+  passwordHash  String?
   firstName     String
   lastName      String
   role          UserRole @default(AUTHOR)
   avatarUrl     String?
   bio           String?
   emailVerified Boolean  @default(false)
+  googleId      String?  @unique
+  appleId       String?  @unique
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 

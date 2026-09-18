@@ -1,11 +1,55 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { BookOpen, Mail, Lock, Loader2 } from 'lucide-react';
+import { GoogleLogin } from '@react-oauth/google';
+import axios from 'axios';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { useAuth } from '../context/AuthContext';
 import { authService } from '../services/api/auth.service';
 import toast from 'react-hot-toast';
+
+interface UserData {
+    id: string;
+    email: string;
+    firstName: string;
+    lastName: string;
+    role: string;
+}
+
+interface GoogleCredentialResponse {
+    credential?: string;
+}
+
+interface AppleResponse {
+    authorization?: {
+        id_token: string;
+    };
+    user?: {
+        name?: {
+            firstName: string;
+            lastName: string;
+        };
+    };
+}
+
+interface ApiError {
+    response?: {
+        data?: {
+            error?: {
+                message?: string;
+            };
+            message?: string;
+        };
+    };
+    message?: string;
+}
+
+interface AppleIDAuth {
+    auth: {
+        signIn: () => Promise<AppleResponse>;
+    };
+}
 
 export const LoginPage: React.FC = () => {
     const [email, setEmail] = useState('');
@@ -15,6 +59,43 @@ export const LoginPage: React.FC = () => {
     const { login } = useAuth();
     const navigate = useNavigate();
 
+    const getRedirectPath = () => {
+        const params = new URLSearchParams(window.location.search);
+        return params.get('returnTo') || '/';
+    };
+
+    const handleOAuthSuccess = (token: string, userData: UserData) => {
+        toast.success('Welcome!');
+        login(token, userData);
+        navigate(getRedirectPath());
+    };
+
+    const handleGoogleSuccess = async (credentialResponse: GoogleCredentialResponse) => {
+        try {
+            const res = await axios.post('/api/auth/google', { idToken: credentialResponse.credential });
+            handleOAuthSuccess(res.data.data.token, res.data.data.user);
+        } catch (err: unknown) {
+            const error = err as ApiError;
+            toast.error(error?.response?.data?.error?.message || 'Google sign-in failed');
+        }
+    };
+
+    const handleAppleSuccess = async (response: AppleResponse) => {
+        try {
+            const res = await axios.post('/api/auth/apple', {
+                idToken: response.authorization?.id_token,
+                user: response.user ? {
+                    firstName: response.user.name?.firstName,
+                    lastName: response.user.name?.lastName,
+                } : undefined,
+            });
+            handleOAuthSuccess(res.data.data.token, res.data.data.user);
+        } catch (err: unknown) {
+            const error = err as ApiError;
+            toast.error(error?.response?.data?.error?.message || 'Apple sign-in failed');
+        }
+    };
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setIsLoading(true);
@@ -23,11 +104,26 @@ export const LoginPage: React.FC = () => {
         try {
             const response = await authService.login(email, password);
 
+            // Backend returns {success: true, data: {token, user}}
+            const { token, user: userData } = response.data;
+
             toast.success('Welcome back!');
-            login(response.token, response.user);
-            navigate('/');
-        } catch (err: any) {
-            setError(err.message || 'Failed to login');
+
+            login(token, userData);
+
+            // Check if there's a returnTo URL
+            const params = new URLSearchParams(window.location.search);
+            const returnTo = params.get('returnTo');
+
+            if (returnTo) {
+                navigate(returnTo);
+            } else {
+                navigate('/');
+            }
+        } catch (err: unknown) {
+            console.error('Login error:', err);
+            const error = err as ApiError;
+            setError(error.response?.data?.error?.message || error.message || 'Failed to login');
         } finally {
             setIsLoading(false);
         }
@@ -54,7 +150,42 @@ export const LoginPage: React.FC = () => {
                     </p>
                 </div>
 
-                <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
+                {/* OAuth Buttons */}
+                <div className="mt-6 space-y-3">
+                    <GoogleLogin
+                        onSuccess={handleGoogleSuccess}
+                        onError={() => toast.error('Google sign-in failed')}
+                        width="100%"
+                        text="signin_with"
+                        shape="rectangular"
+                    />
+                    <button
+                        type="button"
+                        id="appleid-signin"
+                        onClick={() => {
+                            const AppleID = (window as unknown as { AppleID?: AppleIDAuth }).AppleID;
+                            if (!AppleID) { toast.error('Apple Sign-In not loaded'); return; }
+                            AppleID.auth.signIn().then(handleAppleSuccess).catch(() => toast.error('Apple sign-in failed'));
+                        }}
+                        className="w-full flex items-center justify-center gap-3 px-4 py-2.5 border border-slate-300 rounded-lg bg-black text-white hover:bg-slate-800 transition-colors font-medium text-sm"
+                    >
+                        <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z" />
+                        </svg>
+                        Sign in with Apple
+                    </button>
+                </div>
+
+                <div className="relative mt-6">
+                    <div className="absolute inset-0 flex items-center">
+                        <div className="w-full border-t border-slate-200" />
+                    </div>
+                    <div className="relative flex justify-center text-sm">
+                        <span className="px-3 bg-white text-slate-500">Or continue with email</span>
+                    </div>
+                </div>
+
+                <form className="mt-4 space-y-6" onSubmit={handleSubmit}>
                     <div className="space-y-4">
                         <div className="relative">
                             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">

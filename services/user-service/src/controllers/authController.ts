@@ -110,6 +110,36 @@ export class AuthController {
         }
     }
 
+    // POST /auth/google
+    async googleAuth(req: Request, res: Response, next: NextFunction): Promise<void> {
+        try {
+            const { idToken } = req.body;
+            if (!idToken) {
+                res.status(400).json({ success: false, error: { message: 'idToken is required' } });
+                return;
+            }
+            const result = await authService.googleAuth(idToken);
+            res.json({ success: true, data: result });
+        } catch (error) {
+            next(error);
+        }
+    }
+
+    // POST /auth/apple
+    async appleAuth(req: Request, res: Response, next: NextFunction): Promise<void> {
+        try {
+            const { idToken, user: userData } = req.body;
+            if (!idToken) {
+                res.status(400).json({ success: false, error: { message: 'idToken is required' } });
+                return;
+            }
+            const result = await authService.appleAuth(idToken, userData);
+            res.json({ success: true, data: result });
+        } catch (error) {
+            next(error);
+        }
+    }
+
     // GET /auth/me
     async getCurrentUser(req: Request, res: Response, next: NextFunction) {
         try {
