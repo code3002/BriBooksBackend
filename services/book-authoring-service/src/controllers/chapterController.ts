@@ -5,7 +5,7 @@ import { z } from 'zod';
 const createChapterSchema = z.object({
     body: z.object({
         title: z.string().min(1, 'Title is required').max(200),
-        content: z.string().min(1, 'Content is required'),
+        content: z.string().default(''),
         order: z.number().int().min(1),
         illustrationUrls: z.array(z.string().url()).optional(),
     }),
@@ -14,7 +14,7 @@ const createChapterSchema = z.object({
 const updateChapterSchema = z.object({
     body: z.object({
         title: z.string().min(1).max(200).optional(),
-        content: z.string().min(1).optional(),
+        content: z.string().optional(),
         order: z.number().int().min(1).optional(),
         illustrationUrls: z.array(z.string().url()).optional(),
     }),
@@ -56,7 +56,7 @@ export class ChapterController {
     // GET /chapters/:id
     async getChapter(req: Request, res: Response, next: NextFunction) {
         try {
-            const chapter = await chapterService.getChapterById(req.params.id);
+            const chapter = await chapterService.getChapterById(req.params.id, req.user?.userId);
 
             res.json({
                 success: true,
@@ -107,7 +107,7 @@ export class ChapterController {
     // GET /books/:bookId/chapters
     async getBookChapters(req: Request, res: Response, next: NextFunction) {
         try {
-            const chapters = await chapterService.getBookChapters(req.params.bookId);
+            const chapters = await chapterService.getBookChapters(req.params.bookId, req.user?.userId);
 
             res.json({
                 success: true,

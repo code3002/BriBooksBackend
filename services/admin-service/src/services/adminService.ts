@@ -77,7 +77,7 @@ export class AdminService {
     /**
      * Update user role
      */
-    async updateUserRole(userId: string, role: string): Promise<any> {
+    async updateUserRole(userId: string, role: 'ADMIN' | 'AUTHOR' | 'READER' | 'MODERATOR'): Promise<any> {
         const user = await prisma.user.findUnique({ where: { id: userId } });
         if (!user) {
             throw new NotFoundError('User not found');
@@ -181,7 +181,7 @@ export class AdminService {
     /**
      * Reject book
      */
-    async rejectBook(bookId: string, reason?: string): Promise<any> {
+    async rejectBook(bookId: string, _reason?: string): Promise<any> {
         const book = await prisma.book.findUnique({ where: { id: bookId } });
         if (!book) {
             throw new NotFoundError('Book not found');

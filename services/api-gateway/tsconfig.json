@@ -4,11 +4,7 @@
         "outDir": "./dist",
         "rootDir": "./src",
         "baseUrl": ".",
-        "paths": {
-            "@bribooks/shared": [
-                "../../packages/shared/src"
-            ]
-        }
+        "paths": {}
     },
     "include": [
         "src/**/*"

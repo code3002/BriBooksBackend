@@ -154,7 +154,7 @@ export class AdminController {
     }
 
     // GET /api/admin/analytics/users
-    async getUserAnalytics(req: Request, res: Response, next: NextFunction) {
+    async getUserAnalytics(_req: Request, res: Response, next: NextFunction) {
         try {
             const analytics = await adminService.getUserAnalytics();
 
@@ -168,7 +168,7 @@ export class AdminController {
     }
 
     // GET /api/admin/analytics/books
-    async getBookAnalytics(req: Request, res: Response, next: NextFunction) {
+    async getBookAnalytics(_req: Request, res: Response, next: NextFunction) {
         try {
             const analytics = await adminService.getBookAnalytics();
 
@@ -182,7 +182,7 @@ export class AdminController {
     }
 
     // GET /api/admin/analytics/overview
-    async getSystemOverview(req: Request, res: Response, next: NextFunction) {
+    async getSystemOverview(_req: Request, res: Response, next: NextFunction) {
         try {
             const overview = await adminService.getSystemOverview();
 
@@ -196,7 +196,7 @@ export class AdminController {
     }
 
     // GET /api/admin/system/database
-    async getDatabaseStats(req: Request, res: Response, next: NextFunction) {
+    async getDatabaseStats(_req: Request, res: Response, next: NextFunction) {
         try {
             const stats = await adminService.getDatabaseStats();
 

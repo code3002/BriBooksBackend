@@ -10,6 +10,14 @@ import {
     getContentSafetyPrompt,
 } from '../prompts';
 
+// Gemini sometimes wraps JSON responses in ```json ... ``` markdown blocks
+function stripMarkdownJson(text: string): string {
+    return text
+        .replace(/^```(?:json)?\s*/im, '')
+        .replace(/\s*```\s*$/im, '')
+        .trim();
+}
+
 export class GeminiService {
     private genAI: GoogleGenerativeAI;
     private model: any;
@@ -22,8 +30,7 @@ export class GeminiService {
         }
 
         this.genAI = new GoogleGenerativeAI(apiKey);
-        // Use gemini-2.5-flash model (stable version)
-        this.model = this.genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+        this.model = this.genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
     }
 
     // Generate story content
@@ -64,13 +71,12 @@ export class GeminiService {
             const response = await result.response;
             const content = response.text();
 
-            // Parse JSON response
+            // Parse JSON response (strip markdown code fences if present)
             let corrections = [];
             try {
-                const parsed = JSON.parse(content);
+                const parsed = JSON.parse(stripMarkdownJson(content));
                 corrections = parsed.corrections || [];
             } catch (e) {
-                // If parsing fails, return empty corrections
                 corrections = [];
             }
 
@@ -144,7 +150,7 @@ export class GeminiService {
             const response = await result.response;
             const content = response.text();
 
-            // Parse JSON response
+            // Parse JSON response (strip markdown code fences if present)
             let safetyResult = {
                 isSafe: true,
                 issues: [],
@@ -152,7 +158,7 @@ export class GeminiService {
             };
 
             try {
-                const parsed = JSON.parse(content);
+                const parsed = JSON.parse(stripMarkdownJson(content));
                 safetyResult = {
                     isSafe: parsed.isSafe !== false,
                     issues: parsed.issues || [],

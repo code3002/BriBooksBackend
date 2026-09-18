@@ -22,7 +22,7 @@ export const aiAgentService = {
     },
 
     // Chat with AI Assistant
-    async chat(message: string, context: any) {
+    async chat(message: string, context: Record<string, unknown>) {
         const response = await axios.post(`${API_URL}/agent/chat`, { message, context });
         return response.data;
     }

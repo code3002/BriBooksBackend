@@ -1,157 +1,93 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import { ArrowRight, Book, PenTool, Rocket, Sparkles } from 'lucide-react';
-import { Button } from '../components/ui/Button';
+import { ArrowRight, BookOpen, PenLine, Sparkles, Globe2 } from 'lucide-react';
+import { booksService, type Book } from '../services/api/books.service';
+
+const journey = [
+  { number: '01', title: 'Find your story', text: 'Pick the kind of story you want to tell, then choose a look for your book.', icon: BookOpen },
+  { number: '02', title: 'Write one chapter at a time', text: 'Start with a first sentence. Save a draft and return whenever a new idea appears.', icon: PenLine },
+  { number: '03', title: 'Share a finished book', text: 'Preview your pages and publish online when your story feels ready.', icon: Globe2 },
+];
 
 export const HomePage: React.FC = () => {
-    return (
-        <div className="flex flex-col gap-20 pb-20">
-            {/* Hero Section */}
-            <section className="relative overflow-hidden bg-gradient-to-b from-indigo-50/50 to-white pt-20 pb-32">
-                <div className="container mx-auto px-4 md:px-6">
-                    <div className="flex flex-col items-center text-center max-w-4xl mx-auto space-y-8">
-                        <motion.div
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ duration: 0.5 }}
-                            className="inline-flex items-center rounded-full border border-indigo-100 bg-white px-3 py-1 text-sm font-medium text-indigo-600 shadow-sm"
-                        >
-                            <Sparkles className="mr-2 h-4 w-4 text-yellow-500" />
-                            World's Leading Children's Book Publishing Platform
-                        </motion.div>
+  const [books, setBooks] = useState<Book[]>([]);
 
-                        <motion.h1
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ duration: 0.5, delay: 0.1 }}
-                            className="text-5xl md:text-7xl font-display font-bold tracking-tight text-slate-900"
-                        >
-                            Turn Your Child into a <br />
-                            <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-secondary">
-                                Published Author
-                            </span>
-                        </motion.h1>
+  useEffect(() => {
+    let active = true;
+    booksService.getPublishedBooks({ limit: 3 }).then((response) => {
+      if (active) setBooks(response.data || []);
+    }).catch(() => {
+      if (active) setBooks([]);
+    });
+    return () => { active = false; };
+  }, []);
 
-                        <motion.p
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ duration: 0.5, delay: 0.2 }}
-                            className="text-xl text-slate-600 max-w-2xl"
-                        >
-                            Empower your child to write, illustrate, publish, and sell their own books globally. Unleash their creativity with our AI-powered writing assistant.
-                        </motion.p>
-
-                        <motion.div
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ duration: 0.5, delay: 0.3 }}
-                            className="flex flex-col sm:flex-row gap-4 w-full justify-center"
-                        >
-                            <Link to="/signup">
-                                <Button size="lg" className="w-full sm:w-auto gap-2">
-                                    Start Writing for Free <ArrowRight className="h-5 w-5" />
-                                </Button>
-                            </Link>
-                            <Link to="/books">
-                                <Button variant="outline" size="lg" className="w-full sm:w-auto">
-                                    Explore Books
-                                </Button>
-                            </Link>
-                        </motion.div>
-                    </div>
-                </div>
-
-                {/* Decorative blobs */}
-                <div className="absolute top-1/2 left-0 -translate-y-1/2 -translate-x-1/2 w-[500px] h-[500px] bg-primary/10 rounded-full blur-3xl -z-10" />
-                <div className="absolute top-0 right-0 translate-x-1/3 -translate-y-1/4 w-[600px] h-[600px] bg-secondary/10 rounded-full blur-3xl -z-10" />
-            </section>
-
-            {/* Features Section */}
-            <section className="container mx-auto px-4 md:px-6">
-                <div className="text-center mb-16">
-                    <h2 className="text-3xl md:text-4xl font-display font-bold text-slate-900 mb-4">
-                        Why Kids Love BriBooks?
-                    </h2>
-                    <p className="text-lg text-slate-600 max-w-2xl mx-auto">
-                        We provide the perfect platform for young storytellers to express themselves and share their imagination with the world.
-                    </p>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                    <FeatureCard
-                        icon={<PenTool className="h-8 w-8 text-primary" />}
-                        title="AI Writing Assistant"
-                        description="Our smart AI helps kids overcome writer's block and suggests creative ideas to keep the story flowing."
-                        color="bg-indigo-50"
-                    />
-                    <FeatureCard
-                        icon={<Book className="h-8 w-8 text-secondary" />}
-                        title="Professional Publishing"
-                        description="Get printed copies of your book delivered to your doorstep with professional binding and quality."
-                        color="bg-pink-50"
-                    />
-                    <FeatureCard
-                        icon={<Rocket className="h-8 w-8 text-accent" />}
-                        title="Global Recognition"
-                        description="Participate in global book fairs and get a chance to win awards and recognition for your writing."
-                        color="bg-emerald-50"
-                    />
-                </div>
-            </section>
-
-            {/* How it Works */}
-            <section className="bg-slate-50 py-20">
-                <div className="container mx-auto px-4 md:px-6">
-                    <div className="text-center mb-16">
-                        <h2 className="text-3xl md:text-4xl font-display font-bold text-slate-900 mb-4">
-                            How It Works
-                        </h2>
-                        <p className="text-lg text-slate-600">
-                            From idea to published book in 4 simple steps
-                        </p>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-                        <StepCard number="1" title="Write" description="Use our easy editor to write your story." />
-                        <StepCard number="2" title="Illustrate" description="Add beautiful illustrations or upload your own." />
-                        <StepCard number="3" title="Publish" description="Get your book ISBN and publish it globally." />
-                        <StepCard number="4" title="Promote" description="Share with friends and family to sell copies." />
-                    </div>
-                </div>
-            </section>
-        </div>
-    );
-};
-
-const FeatureCard: React.FC<{ icon: React.ReactNode; title: string; description: string; color: string }> = ({
-    icon,
-    title,
-    description,
-    color,
-}) => {
-    return (
-        <motion.div
-            whileHover={{ y: -5 }}
-            className={`p-8 rounded-3xl ${color} border border-transparent hover:border-slate-200 transition-all`}
-        >
-            <div className="mb-6 inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-white shadow-sm">
-                {icon}
+  return (
+    <div>
+      <section className="relative overflow-hidden border-b border-[var(--color-rule)] bg-[var(--color-paper)]">
+        <div className="mx-auto grid max-w-7xl min-w-0 grid-cols-1 items-center gap-12 px-5 py-14 sm:px-8 md:py-20 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,.95fr)] lg:gap-16 lg:py-28">
+          <div className="min-w-0">
+            <p className="story-label mb-7 flex items-center gap-3 text-primary"><span className="h-2 w-2 rounded-full bg-secondary" /> A home for young storytellers</p>
+            <h1 className="story-display max-w-3xl text-[clamp(2.55rem,7vw,6.5rem)] text-ink">Every great book starts with <span className="relative inline-block">one idea<span className="absolute -bottom-1 left-0 h-2 w-full -rotate-1 bg-accent" /></span></h1>
+            <p className="mt-8 max-w-xl text-lg leading-relaxed text-slate-700">Bring your imagination to the page. Choose a story direction, make it yours, and write a book you can share with the world.</p>
+            <div className="mt-9 flex flex-wrap items-center gap-4">
+              <Link className="story-action" to="/start-writing">Start your book <ArrowRight size={18} aria-hidden="true" /></Link>
+              <Link className="story-action story-action-outline" to="/books">Explore books</Link>
             </div>
-            <h3 className="text-xl font-bold text-slate-900 mb-3">{title}</h3>
-            <p className="text-slate-600 leading-relaxed">{description}</p>
-        </motion.div>
-    );
-};
+            <p className="story-label mt-10 text-slate-500">An idea → a draft → a book</p>
+          </div>
 
-const StepCard: React.FC<{ number: string; title: string; description: string }> = ({ number, title, description }) => {
-    return (
-        <div className="relative p-6 bg-white rounded-2xl shadow-sm border border-slate-100 text-center">
-            <div className="absolute -top-6 left-1/2 -translate-x-1/2 h-12 w-12 rounded-full bg-primary text-white flex items-center justify-center font-bold text-xl border-4 border-slate-50">
-                {number}
+          <div className="relative mx-auto flex h-[390px] w-full max-w-[500px] items-center justify-center sm:h-[480px]" aria-label="Illustration of a stack of story books" role="img">
+            <div className="absolute inset-6 rounded-[40px] bg-[var(--color-pear)] sm:inset-8" />
+            <div className="absolute left-[9%] top-[8%] h-20 w-20 rounded-full border-[12px] border-[var(--color-sky)] sm:h-24 sm:w-24" />
+            <div className="absolute bottom-[12%] right-[3%] h-24 w-24 rounded-full bg-[var(--color-coral)] sm:h-32 sm:w-32" />
+            <div className="book-cover absolute left-[13%] top-[22%] h-[60%] w-[49%] -rotate-12 bg-[var(--color-primary)] p-6 text-[var(--color-paper)] sm:p-8">
+              <span className="story-label block text-[var(--color-pear)]">The little idea library</span>
+              <span className="story-display mt-12 block text-3xl sm:text-4xl">A world<br />of my<br />own</span>
+              <span className="absolute bottom-7 left-7 h-14 w-14 rounded-full bg-[var(--color-coral)]" />
             </div>
-            <h3 className="mt-8 text-lg font-bold text-slate-900 mb-2">{title}</h3>
-            <p className="text-sm text-slate-600">{description}</p>
+            <div className="book-cover absolute right-[10%] top-[18%] h-[65%] w-[50%] rotate-6 bg-[var(--color-sky)] p-6 text-ink sm:p-8">
+              <span className="story-label">A story by you</span>
+              <span className="story-display mt-14 block text-3xl sm:text-4xl">What<br />happens<br />next?</span>
+              <Sparkles className="absolute bottom-8 right-7 h-16 w-16 text-primary" strokeWidth={1.4} aria-hidden="true" />
+            </div>
+          </div>
         </div>
-    );
+      </section>
+
+      <section className="mx-auto max-w-7xl px-5 py-20 sm:px-8 lg:py-28" aria-labelledby="journey-heading">
+        <div className="mb-12 grid items-end gap-5 md:grid-cols-[minmax(0,1fr)_minmax(0,.55fr)]">
+          <div><p className="story-label mb-4 text-primary">The writing journey</p><h2 id="journey-heading" className="story-display text-4xl sm:text-5xl">From a spark to a story</h2></div>
+          <p className="max-w-md text-slate-700 md:justify-self-end">The next step is always clear, whether you are planning your first page or finishing your last.</p>
+        </div>
+        <div className="border-t border-[var(--color-rule)]">
+          {journey.map(({ number, title, text, icon: Icon }) => (
+            <div key={number} className="grid gap-4 border-b border-[var(--color-rule)] py-7 sm:grid-cols-[70px_minmax(0,.75fr)_minmax(0,1fr)_45px] sm:items-center sm:gap-6">
+              <span className="story-label text-secondary">{number}</span>
+              <h3 className="text-xl font-bold tracking-tight sm:text-2xl">{title}</h3>
+              <p className="max-w-xl leading-relaxed text-slate-600">{text}</p>
+              <Icon className="hidden text-primary sm:block" size={30} strokeWidth={1.5} aria-hidden="true" />
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section className="bg-[var(--color-primary)] px-5 py-20 text-[var(--color-paper)] sm:px-8 lg:py-24">
+        <div className="mx-auto grid max-w-7xl gap-10 lg:grid-cols-[minmax(0,.8fr)_minmax(0,1.2fr)] lg:items-center">
+          <div><p className="story-label mb-4 text-[var(--color-pear)]">The reading shelf</p><h2 className="story-display text-4xl sm:text-5xl">Stories made by young minds.</h2><p className="mt-6 max-w-md leading-relaxed text-[var(--color-paper-2)]">Explore books that are already published, then make room for your own.</p><Link to="/books" className="story-action mt-8 bg-[var(--color-pear)] text-ink hover:bg-[var(--color-sky)]">Browse the shelf <ArrowRight size={18} /></Link></div>
+          {books.length ? (
+            <div className="grid min-w-0 grid-cols-2 gap-4 sm:grid-cols-3">
+              {books.map((book, index) => (
+                <Link to={`/books/${book.id}`} key={book.id} className={`book-cover flex min-h-[235px] min-w-0 flex-col justify-between p-5 text-ink transition-transform hover:-translate-y-2 sm:min-h-[290px] ${index === 1 ? 'bg-[var(--color-coral)]' : index === 2 ? 'bg-[var(--color-pear)]' : 'bg-[var(--color-sky)]'}`}>
+                  <span className="story-label">BriBooks story</span><span className="story-display text-xl sm:text-2xl">{book.title}</span><span className="text-xs font-semibold">Read this book →</span>
+                </Link>
+              ))}
+            </div>
+          ) : (
+            <div className="story-panel flex min-h-[250px] flex-col items-center justify-center p-8 text-center text-ink"><BookOpen size={40} strokeWidth={1.3} /><p className="mt-4 text-xl font-bold">The shelf is waiting for its first story.</p><p className="mt-2 text-sm text-slate-600">Your book could be the one that starts it.</p></div>
+          )}
+        </div>
+      </section>
+    </div>
+  );
 };

@@ -53,7 +53,7 @@ The frontend connects to the backend microservices via an API Gateway running on
 
 -   **Proxy**: Vite is configured to proxy `/api` requests to `http://localhost:3000`.
 -   **Services**:
-    -   `auth.service.ts`: Handles user registration and login. Adapts frontend data (e.g., splitting `name` into `firstName`/`lastName`) for the `user-service`.
+    -   Clerk handles sign-in and sign-up. `AuthContext` attaches session tokens to API requests.
     -   `books.service.ts`: Manages book creation and retrieval.
     -   `ai.service.ts`: Interfaces with AI services for story and illustration generation.
 
@@ -77,10 +77,9 @@ The frontend connects to the backend microservices via an API Gateway running on
 
 ## 🔐 Authentication
 
-The application implements a complete JWT-based authentication flow:
--   **Signup**: Users can create accounts. The frontend automatically handles payload formatting for the backend.
--   **Login**: Secure login with token storage.
--   **Protected Routes**: (Planned) Routes that require authentication.
+Set `VITE_CLERK_PUBLISHABLE_KEY` in `mybackend-frontend/.env.local` and
+`CLERK_SECRET_KEY` plus `FRONTEND_URL` in the root and service environment.
+Clerk handles sign-in and sign-up. Protected API requests use short-lived Clerk session tokens.
 
 ## ✅ Recent Updates
 

@@ -1,5 +1,4 @@
 import { PrismaClient, UserRole, AgeGroup, BookStatus } from '@prisma/client';
-import bcrypt from 'bcryptjs';
 
 const prisma = new PrismaClient();
 
@@ -7,14 +6,12 @@ async function main() {
     console.log('🌱 Seeding database...');
 
     // Create admin user
-    const adminPassword = await bcrypt.hash('Admin@123', 10);
     const admin = await prisma.user.upsert({
         where: { email: 'admin@bribooks.com' },
         update: {},
         create: {
             email: 'admin@bribooks.com',
             username: 'admin',
-            passwordHash: adminPassword,
             firstName: 'Admin',
             lastName: 'User',
             role: UserRole.ADMIN,
@@ -25,14 +22,12 @@ async function main() {
     console.log('✅ Created admin user:', admin.email);
 
     // Create sample author
-    const authorPassword = await bcrypt.hash('Author@123', 10);
     const author = await prisma.user.upsert({
         where: { email: 'author@bribooks.com' },
         update: {},
         create: {
             email: 'author@bribooks.com',
             username: 'author_demo',
-            passwordHash: authorPassword,
             firstName: 'Demo',
             lastName: 'Author',
             role: UserRole.AUTHOR,

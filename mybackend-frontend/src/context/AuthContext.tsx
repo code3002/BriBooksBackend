@@ -1,84 +1,46 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import axios from 'axios';
-
-interface User {
-    id: string;
-    email: string;
-    name: string;
-    role: string;
-}
-
-interface AuthContextType {
-    user: User | null;
-    isAuthenticated: boolean;
-    isLoading: boolean;
-    login: (token: string, user: User) => void;
-    logout: () => void;
-}
-
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+import { useAuth as useClerkAuth, useClerk, useUser } from '@clerk/react';
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-    const [user, setUser] = useState<User | null>(null);
-    const [isAuthenticated, setIsAuthenticated] = useState(false);
-    const [isLoading, setIsLoading] = useState(true);
+    const { getToken } = useClerkAuth();
+    const [ready, setReady] = useState(false);
 
     useEffect(() => {
-        const initAuth = async () => {
-            const token = localStorage.getItem('token');
-            if (token) {
-                try {
-                    axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-                    // In a real app, we would fetch the user profile here
-                    // const user = await authService.getCurrentUser();
-                    // setUser(user);
-
-                    // For now, use stored user or mock
-                    const storedUser = localStorage.getItem('user');
-                    if (storedUser) {
-                        setUser(JSON.parse(storedUser));
-                    }
-                    setIsAuthenticated(true);
-                } catch (error) {
-                    console.error('Failed to fetch user', error);
-                    localStorage.removeItem('token');
-                    localStorage.removeItem('user');
-                    delete axios.defaults.headers.common['Authorization'];
+        const interceptor = axios.interceptors.request.use(async (config) => {
+            if (config.url?.startsWith('/api/')) {
+                const token = await getToken();
+                if (token) {
+                    config.headers.Authorization = `Bearer ${token}`;
+                } else {
+                    delete config.headers.Authorization;
                 }
             }
-            setIsLoading(false);
+            return config;
+        });
+        const frame = requestAnimationFrame(() => setReady(true));
+        return () => {
+            cancelAnimationFrame(frame);
+            axios.interceptors.request.eject(interceptor);
         };
+    }, [getToken]);
 
-        initAuth();
-    }, []);
-
-    const login = (token: string, userData: User) => {
-        localStorage.setItem('token', token);
-        localStorage.setItem('user', JSON.stringify(userData));
-        setUser(userData);
-        setIsAuthenticated(true);
-        axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-    };
-
-    const logout = () => {
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
-        setUser(null);
-        setIsAuthenticated(false);
-        delete axios.defaults.headers.common['Authorization'];
-    };
-
-    return (
-        <AuthContext.Provider value={{ user, isAuthenticated, isLoading, login, logout }}>
-            {children}
-        </AuthContext.Provider>
-    );
+    return ready ? <>{children}</> : null;
 };
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const useAuth = () => {
-    const context = useContext(AuthContext);
-    if (context === undefined) {
-        throw new Error('useAuth must be used within an AuthProvider');
-    }
-    return context;
+    const { isLoaded, isSignedIn } = useClerkAuth();
+    const { user } = useUser();
+    const clerk = useClerk();
+    return {
+        user: user ? {
+            id: user.id,
+            email: user.primaryEmailAddress?.emailAddress || '',
+            name: user.fullName || user.primaryEmailAddress?.emailAddress || '',
+        } : null,
+        isAuthenticated: Boolean(isSignedIn),
+        isLoading: !isLoaded,
+        logout: () => clerk.signOut(),
+    };
 };

@@ -6,7 +6,7 @@ import { errorHandler, createServiceLogger } from '@bribooks/shared';
 import notificationRoutes from './routes/notificationRoutes';
 
 // Load environment variables
-dotenv.config();
+dotenv.config({ path: require('path').resolve(__dirname, '../../../.env') });
 
 const app: Application = express();
 const PORT = process.env.NOTIFICATION_SERVICE_PORT || 3007;

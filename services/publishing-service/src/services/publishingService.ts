@@ -120,7 +120,9 @@ export class PublishingService {
                     select: {
                         id: true,
                         title: true,
+                        content: true,
                         order: true,
+                        illustrationUrls: true,
                         createdAt: true,
                         updatedAt: true,
                     },
