@@ -200,7 +200,7 @@ export const BookEditorPage: React.FC = () => {
   };
 
   const saveChapter = async () => {
-    if (!currentChapter) return;
+    if (!currentChapter) return false;
 
     try {
       setSaving(true);
@@ -211,9 +211,11 @@ export const BookEditorPage: React.FC = () => {
       setIsChapterDirty(false);
       setChapters((previous) => previous.map((chapter) => chapter.id === currentChapter.id ? currentChapter : chapter));
       setEditorError('');
+      return true;
     } catch (error) {
       console.error("Error saving chapter:", error);
       setEditorError('Your chapter could not be saved. Please try again.');
+      return false;
     } finally {
       setSaving(false);
     }
@@ -244,6 +246,8 @@ export const BookEditorPage: React.FC = () => {
       alert('Please enter a chapter title');
       return;
     }
+
+    if (isChapterDirty && !(await saveChapter())) return;
 
     try {
       const newChapter = await booksService.createChapter(book.id, {
