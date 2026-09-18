@@ -15,7 +15,8 @@ import {
   MicOff,
 } from "lucide-react";
 import { Button } from "../components/ui/Button";
-import { ThemeSelector, getThemeById } from "../components/ThemeSelector";
+import { ThemeSelector } from "../components/ThemeSelector";
+import { getThemeById } from "../components/themeData";
 import { AIAssistant } from "../components/AIAssistant";
 import { PublishSuccessModal } from "../components/PublishSuccessModal";
 import { booksService } from "../services/api/books.service";
@@ -118,11 +119,6 @@ export const BookEditorPage: React.FC = () => {
   }, []);
 
   const loadBook = useCallback(async () => {
-    console.log('=== Loading book ===');
-    console.log('Book ID:', bookId);
-    console.log('localStorage token:', localStorage.getItem('token'));
-    console.log('axios auth header:', axios.defaults.headers.common['Authorization']);
-
     try {
       const response = await booksService.getBookById(bookId!);
 

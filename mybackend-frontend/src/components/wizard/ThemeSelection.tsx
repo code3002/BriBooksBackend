@@ -2,7 +2,7 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { Check } from 'lucide-react';
 import { Button } from '../ui/Button';
-import { bookThemes, getThemeById, type BookTheme } from '../ThemeSelector';
+import { bookThemes, getThemeById, type BookTheme } from '../themeData';
 
 interface ThemeSelectionProps {
     selectedGenre: string;

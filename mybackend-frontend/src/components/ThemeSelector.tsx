@@ -2,7 +2,7 @@ import React from "react";
 import { motion } from "framer-motion";
 import { Check, Sparkles } from "lucide-react";
 import { Button } from "./ui/Button";
-import { bookThemes, getThemeById, applyThemeToElement, type BookTheme } from "./themeData";
+import { bookThemes } from "./themeData";
 
 interface ThemeSelectorProps {
   selectedTheme: string;
@@ -145,5 +145,3 @@ export const ThemeSelector: React.FC<ThemeSelectorProps> = ({
     </div>
   );
 };
-
-export { bookThemes, getThemeById, applyThemeToElement, type BookTheme };

@@ -168,7 +168,7 @@ export class AuthService {
             audience: process.env.GOOGLE_CLIENT_ID,
         });
         const payload = ticket.getPayload();
-        if (!payload || !payload.email) {
+        if (!payload || !payload.email || !payload.email_verified) {
             throw new AuthenticationError('Invalid Google token');
         }
 
@@ -217,7 +217,8 @@ export class AuthService {
         // before trusting any of its claims.
         const decoded = await verifyAppleToken(idToken);
 
-        if (!decoded.sub || typeof decoded.email !== 'string') {
+        if (!decoded.sub || typeof decoded.email !== 'string' ||
+            (decoded.email_verified !== true && decoded.email_verified !== 'true')) {
             throw new AuthenticationError('Invalid Apple token payload');
         }
 
