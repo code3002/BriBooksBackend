@@ -6,7 +6,7 @@ import { errorHandler, createServiceLogger } from '@bribooks/shared';
 import aiRoutes from './routes/aiRoutes';
 
 // Load environment variables
-dotenv.config();
+dotenv.config({ path: require('path').resolve(__dirname, '../../../.env') });
 
 const app: Application = express();
 const PORT = process.env.AI_ORCHESTRATOR_SERVICE_PORT || 3003;

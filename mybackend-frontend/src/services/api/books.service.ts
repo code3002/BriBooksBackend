@@ -36,6 +36,7 @@ export interface Book {
   status: string;
   tags?: string[];
   theme?: string;
+  themeId?: string;
   coverImageUrl?: string;
   createdAt: string;
   updatedAt: string;
@@ -109,16 +110,17 @@ export const booksService = {
 
   // Authoring Service - for user's own books
   async getUserBooks() {
-    const response = await axios.get(`${BOOK_API_URL}`);
+    const response = await axios.get(`${BOOK_API_URL}/my`);
     return response.data;
   },
 
-  async createBook(title: string, description: string, ageGroup: string, tags?: string[]) {
+  async createBook(title: string, description: string, ageGroup: string, tags?: string[], themeId?: string) {
     const response = await axios.post(BOOK_API_URL, {
       title,
       description,
       ageGroup,
-      tags: tags || []
+      tags: tags || [],
+      themeId,
     });
     return response.data;
   },

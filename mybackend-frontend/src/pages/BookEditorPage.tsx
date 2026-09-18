@@ -43,6 +43,7 @@ interface Book {
   ageGroup: string;
   tags: string[];
   coverImageUrl?: string;
+  themeId?: string;
   status: string;
   createdAt: string;
   updatedAt: string;
@@ -78,6 +79,8 @@ export const BookEditorPage: React.FC = () => {
   const [newChapterTitle, setNewChapterTitle] = useState("");
   const [selectedTheme, setSelectedTheme] = useState("enchanted-forest");
   const [showPublishSuccess, setShowPublishSuccess] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
+  const [editorError, setEditorError] = useState('');
 
   // Voice recording
   const {
@@ -123,6 +126,7 @@ export const BookEditorPage: React.FC = () => {
       const response = await booksService.getBookById(bookId!);
 
       setBook(response.data);
+      if (response.data.themeId) setSelectedTheme(response.data.themeId);
       setBookForm({
         title: response.data.title,
         description: response.data.description,
@@ -171,8 +175,9 @@ export const BookEditorPage: React.FC = () => {
       setSaving(true);
       if (bookId) {
         // Update existing book
-        await booksService.updateBook(bookId, bookForm);
-        setBook({ ...book!, ...bookForm });
+        await booksService.updateBook(bookId, { ...bookForm, themeId: selectedTheme });
+        setBook({ ...book!, ...bookForm, themeId: selectedTheme });
+        setIsEditingBook(false);
         alert('Book saved successfully!');
       } else {
         // Create new book - include required fields
@@ -180,7 +185,8 @@ export const BookEditorPage: React.FC = () => {
           bookForm.title,
           bookForm.description,
           bookForm.ageGroup || 'MIDDLE_GRADE', // Default if not set
-          bookForm.tags || []
+          bookForm.tags || [],
+          selectedTheme
         );
         alert('Book created successfully!');
         navigate(`/editor/${response.data.id}`);
@@ -190,7 +196,6 @@ export const BookEditorPage: React.FC = () => {
       alert('Failed to save book. Please try again.');
     } finally {
       setSaving(false);
-      setIsEditingBook(false);
     }
   };
 
@@ -204,8 +209,11 @@ export const BookEditorPage: React.FC = () => {
         content: currentChapter.content,
       });
       setIsChapterDirty(false);
+      setChapters((previous) => previous.map((chapter) => chapter.id === currentChapter.id ? currentChapter : chapter));
+      setEditorError('');
     } catch (error) {
       console.error("Error saving chapter:", error);
+      setEditorError('Your chapter could not be saved. Please try again.');
     } finally {
       setSaving(false);
     }
@@ -246,6 +254,7 @@ export const BookEditorPage: React.FC = () => {
 
       setChapters([...chapters, newChapter.data]);
       setCurrentChapter(newChapter.data);
+      setIsChapterDirty(false);
       setNewChapterTitle("");
     } catch (error) {
       console.error("Error creating chapter:", error);
@@ -262,6 +271,8 @@ export const BookEditorPage: React.FC = () => {
       setChapters(updatedChapters);
       if (currentChapter?.id === chapterId && updatedChapters.length > 0) {
         setCurrentChapter(updatedChapters[0]);
+      } else if (currentChapter?.id === chapterId) {
+        setCurrentChapter(null);
       }
     } catch (error) {
       console.error("Error deleting chapter:", error);
@@ -327,12 +338,17 @@ export const BookEditorPage: React.FC = () => {
   const publishBook = async () => {
     if (!book) return;
 
-    if (
-      !confirm(
-        "Are you ready to publish this book? It will be available for readers worldwide.",
-      )
-    )
-      return;
+    if (!confirm('Are you ready to publish this book? It will be available for readers worldwide.')) return;
+
+    if (isChapterDirty && currentChapter) {
+      try {
+        await booksService.updateChapter(currentChapter.id, { title: currentChapter.title, content: currentChapter.content });
+        setIsChapterDirty(false);
+      } catch {
+        setEditorError('Save this chapter before publishing.');
+        return;
+      }
+    }
 
     try {
       await booksService.publishBook(book.id);
@@ -351,11 +367,11 @@ export const BookEditorPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen bg-[var(--color-paper)]">
       {/* Header */}
-      <header className="bg-white border-b border-slate-200 sticky top-0 z-40">
+      <header className="bg-[var(--color-paper)] border-b border-[var(--color-rule)] sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-4 md:px-6">
-          <div className="flex items-center justify-between h-16">
+          <div className="flex min-h-16 flex-wrap items-center justify-between gap-3 py-3">
             <div className="flex items-center gap-4">
               <Link to="/dashboard">
                 <ArrowLeft className="h-6 w-6 text-slate-600 hover:text-slate-900 cursor-pointer" />
@@ -389,7 +405,7 @@ export const BookEditorPage: React.FC = () => {
               )}
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               {book && (
                 <Button
                   variant="outline"
@@ -399,11 +415,11 @@ export const BookEditorPage: React.FC = () => {
                   Settings
                 </Button>
               )}
-              <Button variant="outline" disabled={!book}>
+              <Button variant="outline" disabled={!book} onClick={() => setShowPreview(!showPreview)}>
                 <Eye className="h-4 w-4 mr-2" />
-                Preview
+                {showPreview ? 'Edit' : 'Preview'}
               </Button>
-              {book?.status !== "PUBLISHED" && (
+              {book && book.status !== "PUBLISHED" && (
                 <Button
                   onClick={publishBook}
                   className="bg-green-600 hover:bg-green-700"
@@ -416,13 +432,13 @@ export const BookEditorPage: React.FC = () => {
         </div>
       </header>
 
-      <div className="flex h-[calc(100vh-4rem)]">
+      <div className="flex min-h-[calc(100vh-4rem)] flex-col lg:flex-row">
         {/* Book Settings Sidebar */}
         {isEditingBook && (
           <motion.div
             initial={{ x: -300, opacity: 0 }}
             animate={{ x: 0, opacity: 1 }}
-            className="w-80 bg-white border-r border-slate-200 p-6 overflow-y-auto"
+            className="w-full bg-[var(--color-paper-2)] border-b border-[var(--color-rule)] p-5 lg:w-80 lg:shrink-0 lg:border-b-0 lg:border-r lg:p-6 lg:overflow-y-auto"
           >
             <h3 className="font-semibold text-slate-900 mb-4">Book Settings</h3>
 
@@ -494,7 +510,7 @@ export const BookEditorPage: React.FC = () => {
         )}
 
         {/* Chapters Sidebar */}
-        <div className="w-80 bg-white border-r border-slate-200 p-6 overflow-y-auto">
+        <div className="w-full bg-[var(--color-paper-2)] border-b border-[var(--color-rule)] p-5 lg:w-80 lg:shrink-0 lg:border-b-0 lg:border-r lg:p-6 lg:overflow-y-auto">
           <div className="flex items-center justify-between mb-4">
             <h3 className="font-semibold text-slate-900">Chapters</h3>
             <Button size="sm" onClick={createChapter} disabled={!book}>
@@ -509,7 +525,7 @@ export const BookEditorPage: React.FC = () => {
                 type="text"
                 value={newChapterTitle}
                 onChange={(e) => setNewChapterTitle(e.target.value)}
-                onKeyPress={(e) => e.key === "Enter" && createChapter()}
+                onKeyDown={(e) => e.key === "Enter" && createChapter()}
                 placeholder="New chapter title..."
                 className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary outline-none text-sm"
               />
@@ -577,7 +593,7 @@ export const BookEditorPage: React.FC = () => {
 
         {/* Editor */}
         <main
-          className="flex-1 p-6 overflow-y-auto"
+          className="min-w-0 flex-1 p-5 lg:p-8 lg:overflow-y-auto"
           style={{
             background:
               getThemeById(selectedTheme)?.colors.background || "#ffffff",
@@ -585,7 +601,10 @@ export const BookEditorPage: React.FC = () => {
         >
           {currentChapter ? (
             <div className="max-w-4xl mx-auto">
-              <div className="rounded-3xl border border-slate-200 bg-white/85 shadow-xl shadow-slate-200/60 p-6 md:p-8 backdrop-blur">
+              <div className="story-panel p-5 shadow-lg sm:p-8">
+                <p className="story-label mb-5 text-primary">Chapter {currentChapter.order} · {showPreview ? 'Preview' : 'Writing desk'}</p>
+                {editorError && <p role="alert" className="mb-4 text-sm font-semibold text-red-700">{editorError}</p>}
+                {showPreview ? <article className="min-h-[430px]"><h2 className="story-display mb-7 text-3xl">{currentChapter.title}</h2><p className="whitespace-pre-wrap text-lg leading-8">{currentChapter.content || 'Your story will appear here as you write.'}</p></article> : <>
                 <div className="mb-6">
                   <input
                     type="text"
@@ -612,7 +631,7 @@ export const BookEditorPage: React.FC = () => {
                         content: e.target.value,
                       });
                     }}
-                    className="w-full min-h-[420px] p-5 pr-16 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-primary focus:border-primary outline-none text-lg leading-relaxed resize-none bg-white/90 shadow-inner"
+                    className="w-full min-h-[420px] p-4 pr-16 border border-[var(--color-rule)] rounded-xl focus:ring-2 focus:ring-primary outline-none text-lg leading-relaxed resize-y bg-white sm:p-5"
                     placeholder="Start writing or click the microphone to speak..."
                   />
 
@@ -659,7 +678,7 @@ export const BookEditorPage: React.FC = () => {
                   )}
                 </div>
 
-                <div className="flex justify-between items-center">
+                <div className="flex flex-wrap justify-between items-center gap-3">
                   <div className="text-sm text-slate-500">
                     Word count:{" "}
                     {
@@ -673,6 +692,7 @@ export const BookEditorPage: React.FC = () => {
                     {saving ? "Saving..." : "Save Chapter"}
                   </Button>
                 </div>
+                </>}
             </div>
             </div>
           ) : (

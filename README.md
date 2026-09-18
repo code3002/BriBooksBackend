@@ -89,26 +89,9 @@ All requests go through the API Gateway at `http://localhost:3000`
 ### Authentication
 
 ```bash
-# Register
-POST /api/auth/register
-{
-  "email": "user@example.com",
-  "username": "username",
-  "password": "Password@123",
-  "firstName": "John",
-  "lastName": "Doe"
-}
-
-# Login
-POST /api/auth/login
-{
-  "email": "user@example.com",
-  "password": "Password@123"
-}
-
-# Get current user
+# Sign in through Clerk at /login in the frontend, then get current user
 GET /api/auth/me
-Headers: Authorization: Bearer <token>
+Headers: Authorization: Bearer <Clerk session token>
 ```
 
 ### Books
@@ -228,10 +211,11 @@ npm run db:migrate --workspace=packages/database
 npx prisma migrate reset --schema=packages/database/prisma/schema.prisma
 ```
 
-### Default Users (from seed)
+### Sample Users (from seed)
 
-- **Admin**: admin@bribooks.com / Admin@123
-- **Author**: author@bribooks.com / Author@123
+The seed creates admin@bribooks.com and author@bribooks.com records. Sign in
+with the matching verified email through Clerk to link the record; the seed
+does not create passwords.
 
 ## 🔧 Development
 
@@ -273,8 +257,7 @@ npm test --workspace=services/user-service
 
 ## 🔐 Security
 
-- JWT-based authentication
-- Password hashing with bcrypt
+- Clerk session authentication
 - Rate limiting on API Gateway
 - Helmet.js for security headers
 - Input validation with Zod
@@ -297,7 +280,8 @@ See `ENV_SETUP.md` for complete list of environment variables.
 Key variables:
 - `DATABASE_URL` - Neon PostgreSQL connection string
 - `GEMINI_API_KEY` - Google Gemini AI API key
-- `JWT_SECRET` - Secret for JWT token generation
+- `CLERK_SECRET_KEY` - Clerk backend secret key
+- `FRONTEND_URL` - Allowed Clerk token origin
 - Service ports for each microservice
 
 ## 🚢 Deployment

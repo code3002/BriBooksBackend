@@ -6,7 +6,7 @@ import { errorHandler, createServiceLogger } from '@bribooks/shared';
 import safetyRoutes from './routes/safetyRoutes';
 
 // Load environment variables
-dotenv.config();
+dotenv.config({ path: require('path').resolve(__dirname, '../../../.env') });
 
 const app: Application = express();
 const PORT = process.env.SAFETY_SERVICE_PORT || 3004;

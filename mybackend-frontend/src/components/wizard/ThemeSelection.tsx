@@ -1,145 +1,43 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Check } from 'lucide-react';
-import { Button } from '../ui/Button';
+import { ArrowLeft, ArrowRight, Check } from 'lucide-react';
 import { bookThemes, getThemeById, type BookTheme } from '../themeData';
 
 interface ThemeSelectionProps {
-    selectedGenre: string;
-    selectedTheme: string | null;
-    onSelect: (themeId: string) => void;
-    onBack: () => void;
-    onNext: () => void;
+  selectedGenre: string;
+  selectedTheme: string | null;
+  onSelect: (themeId: string) => void;
+  onBack: () => void;
+  onNext: () => void;
 }
 
-// Map our genre IDs to theme categories
 const genreToCategory: Record<string, string> = {
-    fantasy: 'Fantasy',
-    science: 'Science',
-    animals: 'Animals',
-    technology: 'Technology',
-    art: 'Art',
-    sports: 'Sports',
-    environment: 'Environment',
-    general: 'Fantasy', // Default to Fantasy for general
+  fantasy: 'Fantasy', science: 'Science', animals: 'Animals', technology: 'Technology',
+  art: 'Art', sports: 'Sports', environment: 'Environment', general: 'Fantasy',
 };
 
-export const ThemeSelection: React.FC<ThemeSelectionProps> = ({
-    selectedGenre,
-    selectedTheme,
-    onSelect,
-    onBack,
-    onNext,
-}) => {
-    const category = genreToCategory[selectedGenre] || 'Fantasy';
-    const filteredThemes = bookThemes.filter((theme: BookTheme) => theme.category === category);
+export const ThemeSelection: React.FC<ThemeSelectionProps> = ({ selectedGenre, selectedTheme, onSelect, onBack, onNext }) => {
+  const category = genreToCategory[selectedGenre];
+  const matched = category ? bookThemes.filter((theme) => theme.category === category) : [];
+  const themes = matched.length ? matched : bookThemes;
 
-    // If no themes match, show all themes
-    const themesToShow = filteredThemes.length > 0 ? filteredThemes : bookThemes;
-
-    return (
-        <motion.div
-            initial={{ opacity: 0, x: 100 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -100 }}
-            transition={{ duration: 0.3 }}
-            className="max-w-6xl mx-auto px-6 py-8"
-        >
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
-                <div>
-                    <h1 className="text-3xl md:text-4xl font-bold text-slate-900 mb-2">
-                        What is the theme of your book?
-                    </h1>
-                    <p className="text-slate-600">
-                        Select a theme that matches your story's mood
-                    </p>
-                </div>
-                <Button variant="outline" onClick={onBack} className="whitespace-nowrap">
-                    ← Change Genre
-                </Button>
-            </div>
-
-            {/* Themes Grid */}
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6 mb-8">
-                {themesToShow.map((theme: BookTheme, index: number) => {
-                    const isSelected = selectedTheme === theme.id;
-
-                    return (
-                        <motion.div
-                            key={theme.id}
-                            initial={{ opacity: 0, scale: 0.9 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            transition={{ delay: index * 0.05 }}
-                            whileHover={{ scale: 1.05 }}
-                            whileTap={{ scale: 0.95 }}
-                            onClick={() => onSelect(theme.id)}
-                            className={`relative cursor-pointer rounded-2xl overflow-hidden shadow-lg transition-all ${isSelected
-                                    ? 'ring-4 ring-green-500 shadow-green-200'
-                                    : 'hover:shadow-xl'
-                                }`}
-                        >
-                            {/* Cover/Preview */}
-                            <div
-                                className="aspect-[3/4] flex items-center justify-center text-5xl md:text-6xl p-6"
-                                style={{ background: theme.colors.background }}
-                            >
-                                {theme.preview}
-                            </div>
-
-                            {/* Theme Name */}
-                            <div className="bg-white p-3 md:p-4">
-                                <h3 className="font-semibold text-sm md:text-base text-slate-900 text-center mb-1">
-                                    {theme.name}
-                                </h3>
-                                <p className="text-xs text-slate-500 text-center">
-                                    {theme.category}
-                                </p>
-                            </div>
-
-                            {/* Selected Checkmark */}
-                            {isSelected && (
-                                <motion.div
-                                    initial={{ scale: 0 }}
-                                    animate={{ scale: 1 }}
-                                    className="absolute top-3 right-3 bg-green-500 rounded-full p-2 shadow-lg"
-                                >
-                                    <Check className="h-5 w-5 md:h-6 md:w-6 text-white" />
-                                </motion.div>
-                            )}
-
-                            {/* Popular Badge */}
-                            {theme.popular && !isSelected && (
-                                <div className="absolute top-3 left-3 bg-yellow-400 text-yellow-900 text-xs font-bold px-2 py-1 rounded-full shadow-md">
-                                    Popular
-                                </div>
-                            )}
-                        </motion.div>
-                    );
-                })}
-            </div>
-
-            {/* Navigation */}
-            <div className="flex justify-between items-center">
-                <Button variant="ghost" onClick={onBack}>
-                    ← Back
-                </Button>
-                <Button
-                    onClick={onNext}
-                    disabled={!selectedTheme}
-                    size="lg"
-                    className="px-8"
-                >
-                    Next →
-                </Button>
-            </div>
-
-            <div className="text-center mt-6">
-                <p className="text-sm text-slate-500">
-                    {selectedTheme
-                        ? `Selected: ${getThemeById(selectedTheme)?.name}`
-                        : 'Please select a theme to continue'}
-                </p>
-            </div>
-        </motion.div>
-    );
+  return (
+    <motion.section initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }} transition={{ duration: .25 }} className="mx-auto max-w-6xl px-5 py-8 sm:px-8">
+      <div className="mb-9 flex flex-wrap items-end justify-between gap-6"><div className="max-w-3xl"><p className="story-label mb-3 text-primary">Now, give it a look</p><h1 className="story-display text-4xl sm:text-5xl">Choose your book's mood.</h1><p className="mt-4 text-slate-600">A theme gives your pages a starting style. You can change it later in the editor.</p></div><button type="button" onClick={onBack} className="story-action story-action-outline"><ArrowLeft size={17} /> Genres</button></div>
+      <div className="grid min-w-0 grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+        {themes.map((theme: BookTheme) => {
+          const selected = selectedTheme === theme.id;
+          return <button key={theme.id} type="button" onClick={() => onSelect(theme.id)} aria-pressed={selected} className={`group min-w-0 rounded-xl border-2 bg-[var(--color-paper)] p-2 text-left transition-all hover:-translate-y-0.5 ${selected ? 'border-primary shadow-lg' : 'border-transparent hover:border-[var(--color-rule)]'}`}>
+            <span className="book-cover relative flex aspect-[3/4] min-w-0 flex-col justify-between p-4 sm:p-5" style={{ backgroundColor: theme.colors.background, color: theme.colors.text }}>
+              <span className="story-label text-[.6rem]">A book by you</span><span className="story-display text-lg sm:text-2xl">{theme.name}</span><span className="flex gap-1"><span className="h-4 w-4 rounded-full" style={{ backgroundColor: theme.colors.primary }} /><span className="h-4 w-4 rounded-full" style={{ backgroundColor: theme.colors.accent }} /></span>
+              {selected && <span className="absolute right-3 top-3 flex h-7 w-7 items-center justify-center rounded-full bg-primary text-[var(--color-paper)]"><Check size={16} /></span>}
+            </span>
+            <span className="block px-1 pb-1 pt-3 text-sm font-bold text-ink">{theme.name}</span>
+            <span className="block px-1 pb-2 text-xs text-slate-500">{theme.category}</span>
+          </button>;
+        })}
+      </div>
+      <div className="mt-8 flex flex-wrap items-center justify-between gap-4 border-t border-[var(--color-rule)] pt-6"><p className="text-sm text-slate-600">{selectedTheme ? `${getThemeById(selectedTheme)?.name} selected` : 'Choose one cover to continue.'}</p><button type="button" onClick={onNext} disabled={!selectedTheme} className="story-action">Next: book details <ArrowRight size={17} /></button></div>
+    </motion.section>
+  );
 };

@@ -7,7 +7,7 @@ import authRoutes from './routes/authRoutes';
 import userRoutes from './routes/userRoutes';
 
 // Load environment variables
-dotenv.config();
+dotenv.config({ path: require('path').resolve(__dirname, '../../../.env') });
 
 const app: Application = express();
 const PORT = process.env.USER_SERVICE_PORT || 3001;

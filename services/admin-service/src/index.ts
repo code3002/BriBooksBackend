@@ -6,7 +6,7 @@ import { errorHandler, createServiceLogger } from '@bribooks/shared';
 import adminRoutes from './routes/adminRoutes';
 
 // Load environment variables
-dotenv.config();
+dotenv.config({ path: require('path').resolve(__dirname, '../../../.env') });
 
 const app: Application = express();
 const PORT = process.env.ADMIN_SERVICE_PORT || 3008;

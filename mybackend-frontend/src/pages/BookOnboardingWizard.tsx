@@ -34,7 +34,7 @@ interface WizardState {
 
 export const BookOnboardingWizard: React.FC = () => {
     const navigate = useNavigate();
-    const { user, isAuthenticated } = useAuth();
+    const { user, isAuthenticated, logout } = useAuth();
     const [wizardState, setWizardState] = useState<WizardState>({
         step: 1,
         selectedGenre: null,
@@ -87,8 +87,7 @@ export const BookOnboardingWizard: React.FC = () => {
             ...prev,
             selectedGenre: genreId,
         }));
-        // Auto-advance to theme selection
-        setTimeout(() => goToNextStep(), 300);
+        goToNextStep();
     };
 
     const handleThemeSelect = (themeId: string) => {
@@ -121,7 +120,8 @@ export const BookOnboardingWizard: React.FC = () => {
                 wizardState.bookDetails.title,
                 wizardState.bookDetails.description,
                 wizardState.bookDetails.ageGroup,
-                wizardState.selectedGenre ? [wizardState.selectedGenre] : []
+                wizardState.selectedGenre ? [wizardState.selectedGenre] : [],
+                wizardState.selectedTheme || undefined
             );
 
             const bookId = response.data.id;
@@ -142,28 +142,25 @@ export const BookOnboardingWizard: React.FC = () => {
             const err = error as ApiError;
 
             // Handle authentication errors
-            if (err.response?.status === 401 || err.response?.status === 403) {
-                console.error('API returned auth error - token may be invalid');
-                // Token might be expired, save state and redirect
+            if (err.response?.status === 401) {
+                // Save the form before sending the user through Clerk sign-in again.
                 sessionStorage.setItem('wizardState', JSON.stringify(wizardState));
                 sessionStorage.setItem('pendingWizardReturn', 'true');
-                // Clear invalid token
-                localStorage.removeItem('token');
-                localStorage.removeItem('user');
+                await logout();
                 navigate('/login?returnTo=/start-writing');
             } else {
                 // Re-throw for form error handling
-                throw new Error(err.response?.data?.message || 'Failed to create book. Please try again.');
+                throw new Error(err.response?.data?.error?.message || err.response?.data?.message || 'Could not create your book. Please try again.');
             }
         }
     };
     return (
-        <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-blue-50 to-purple-50">
+        <div className="min-h-screen bg-[var(--color-paper)] text-ink">
             {/* Progress Indicator */}
             <WizardProgress currentStep={wizardState.step} totalSteps={3} />
 
             {/* Wizard Steps */}
-            <div className="pb-12">
+            <div className="pb-14">
                 <AnimatePresence mode="wait">
                     {wizardState.step === 1 && (
                         <GenreSelection key="genre" onSelect={handleGenreSelect} />
@@ -193,14 +190,7 @@ export const BookOnboardingWizard: React.FC = () => {
             </div>
 
             {/* Back to Home Link */}
-            <div className="fixed bottom-4 left-4">
-                <button
-                    onClick={() => navigate('/')}
-                    className="text-sm text-slate-600 hover:text-slate-900 underline"
-                >
-                    ← Back to Home
-                </button>
-            </div>
+            <div className="mx-auto max-w-6xl px-5 pb-8 sm:px-8"><button type="button" onClick={() => navigate('/')} className="min-h-11 text-sm font-semibold text-slate-600 underline hover:text-primary">← Back to home</button></div>
         </div>
     );
 };

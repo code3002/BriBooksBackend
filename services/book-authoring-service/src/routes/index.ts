@@ -1,15 +1,16 @@
 import express from 'express';
 import { bookController } from '../controllers/bookController';
 import { chapterController } from '../controllers/chapterController';
-import { authenticate } from '@bribooks/shared';
+import { authenticate, optionalAuthenticate } from '@bribooks/shared';
 
 const router = express.Router();
 
 // Public routes
 router.get('/books', bookController.getPublishedBooks.bind(bookController));
-router.get('/books/:id', bookController.getBook.bind(bookController));
-router.get('/books/:bookId/chapters', chapterController.getBookChapters.bind(chapterController));
-router.get('/chapters/:id', chapterController.getChapter.bind(chapterController));
+router.get('/books/my', authenticate, bookController.getMyBooks.bind(bookController));
+router.get('/books/:id', optionalAuthenticate, bookController.getBook.bind(bookController));
+router.get('/books/:bookId/chapters', optionalAuthenticate, chapterController.getBookChapters.bind(chapterController));
+router.get('/chapters/:id', optionalAuthenticate, chapterController.getChapter.bind(chapterController));
 
 // Protected routes
 router.use(authenticate);

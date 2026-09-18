@@ -40,7 +40,7 @@ export class ChapterService {
     }
 
     // Get chapter by ID
-    async getChapterById(chapterId: string) {
+    async getChapterById(chapterId: string, userId?: string) {
         const chapter = await prisma.chapter.findUnique({
             where: { id: chapterId },
             include: {
@@ -59,6 +59,10 @@ export class ChapterService {
 
         if (!chapter) {
             throw new NotFoundError('Chapter');
+        }
+
+        if (chapter.book.status !== 'PUBLISHED' && chapter.book.authorId !== userId) {
+            throw new AuthorizationError('You do not have access to this chapter');
         }
 
         return chapter;
@@ -119,7 +123,14 @@ export class ChapterService {
     }
 
     // Get all chapters for a book
-    async getBookChapters(bookId: string) {
+    async getBookChapters(bookId: string, userId?: string) {
+        const book = await prisma.book.findUnique({ where: { id: bookId } });
+        if (!book) {
+            throw new NotFoundError('Book');
+        }
+        if (book.status !== 'PUBLISHED' && book.authorId !== userId) {
+            throw new AuthorizationError('You do not have access to this book');
+        }
         const chapters = await prisma.chapter.findMany({
             where: { bookId },
             orderBy: { order: 'asc' },

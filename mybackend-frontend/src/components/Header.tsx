@@ -1,148 +1,43 @@
-import React from "react";
-import { Link } from "react-router-dom";
-import { BookOpen, Menu, X, User } from "lucide-react";
-import { Button } from "./ui/Button";
-import { useAuth } from "../context/AuthContext";
+import React from 'react';
+import { Link } from 'react-router-dom';
+import { BookOpen, Menu, X } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 
 export const Header: React.FC = () => {
   const { user, isAuthenticated, logout } = useAuth();
-  const [isMenuOpen, setIsMenuOpen] = React.useState(false);
+  const [open, setOpen] = React.useState(false);
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-slate-200 bg-white/80 backdrop-blur-xl transition-all">
-      <div className="container mx-auto px-4 md:px-6">
-        <div className="flex h-16 items-center justify-between">
-          <Link to="/" className="flex items-center gap-2">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-white shadow-lg shadow-primary/20">
-              <BookOpen className="h-6 w-6" />
-            </div>
-            <span className="text-xl font-bold tracking-tight text-slate-900">
-              BriBooks<span className="text-primary">.</span>
-            </span>
-          </Link>
-
-          {/* Desktop Navigation */}
-          <nav className="hidden md:flex items-center gap-8">
-            <Link
-              to="/books"
-              className="text-sm font-medium text-slate-600 hover:text-primary transition-colors"
-            >
-              Read Books
-            </Link>
-            {isAuthenticated ? (
-              <>
-                <Link
-                  to="/start-writing"
-                  className="inline-flex items-center justify-center rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary-hover transition-colors"
-                >
-                  Write a Book
-                </Link>
-                <Link
-                  to="/dashboard"
-                  className="text-sm font-medium text-slate-600 hover:text-primary transition-colors"
-                >
-                  Dashboard
-                </Link>
-              </>
-            ) : (
-              <Link
-                to="/pricing"
-                className="text-sm font-medium text-slate-600 hover:text-primary transition-colors"
-              >
-                Pricing
-              </Link>
-            )}
-          </nav>
-
-          <div className="hidden md:flex items-center gap-4">
-            {isAuthenticated ? (
-              <div className="flex items-center gap-3">
-                <Link
-                  to="/dashboard"
-                  className="flex items-center gap-2 text-sm font-medium text-slate-600 hover:text-primary transition-colors"
-                >
-                  <User className="h-4 w-4" />
-                  {user?.name}
-                </Link>
-                <Button variant="ghost" size="sm" onClick={() => logout()}>
-                  Log out
-                </Button>
-              </div>
-            ) : (
-              <>
-                <Link to="/login">
-                  <Button variant="ghost" size="sm">
-                    Log in
-                  </Button>
-                </Link>
-                <Link to="/signup">
-                  <Button size="sm">Get Started</Button>
-                </Link>
-              </>
-            )}
-          </div>
-
-          {/* Mobile Menu Button */}
-          <button
-            className="md:hidden p-2 text-slate-600"
-            onClick={() => setIsMenuOpen(!isMenuOpen)}
-          >
-            {isMenuOpen ? <X /> : <Menu />}
-          </button>
+    <header className="relative z-50 border-b border-[var(--color-rule)] bg-[var(--color-paper)]">
+      <div className="mx-auto flex h-[74px] max-w-7xl items-center justify-between gap-6 px-5 sm:px-8">
+        <Link to="/" className="flex shrink-0 items-center gap-2.5 text-ink" aria-label="BriBooks home">
+          <span className="flex h-9 w-9 items-center justify-center rounded-[10px] bg-primary text-[var(--color-paper)]"><BookOpen size={20} strokeWidth={2.4} /></span>
+          <span className="font-display text-xl font-extrabold tracking-[-.07em]">bri<span className="text-primary">books</span><span className="text-secondary">.</span></span>
+        </Link>
+        <nav className="hidden items-center gap-8 md:flex" aria-label="Main navigation">
+          <Link to="/books" className="text-sm font-semibold text-ink hover:text-primary">Explore books</Link>
+          {isAuthenticated && <Link to="/dashboard" className="text-sm font-semibold text-ink hover:text-primary">My books</Link>}
+        </nav>
+        <div className="hidden items-center gap-3 md:flex">
+          {isAuthenticated ? (
+            <>
+              <span className="max-w-36 truncate text-sm text-slate-600">Hi, {user?.name?.split(' ')[0]}</span>
+              <button type="button" onClick={() => void logout()} className="text-sm font-semibold text-ink hover:text-primary">Sign out</button>
+              <Link to="/start-writing" className="story-action">Write a book <span aria-hidden="true">↗</span></Link>
+            </>
+          ) : (
+            <><Link to="/login" className="text-sm font-semibold text-ink hover:text-primary">Sign in</Link><Link to="/start-writing" className="story-action">Write a book <span aria-hidden="true">↗</span></Link></>
+          )}
         </div>
+        <button type="button" className="flex h-11 w-11 items-center justify-center rounded-lg border border-[var(--color-rule)] md:hidden" aria-label={open ? 'Close menu' : 'Open menu'} aria-expanded={open} onClick={() => setOpen(!open)}>{open ? <X size={22} /> : <Menu size={22} />}</button>
       </div>
-
-      {/* Mobile Menu */}
-      {isMenuOpen && (
-        <div className="md:hidden border-t border-slate-100 bg-white p-4 shadow-lg">
-          <nav className="flex flex-col gap-4">
-            <Link to="/books" className="text-base font-medium text-slate-600">
-              Read Books
-            </Link>
-            {isAuthenticated ? (
-              <>
-                <Link to="/start-writing" className="text-base font-medium text-slate-600">
-                  Write a Book
-                </Link>
-                <Link to="/dashboard" className="text-base font-medium text-slate-600">
-                  Dashboard
-                </Link>
-                <div className="flex flex-col gap-2 mt-4">
-                  <Link to="/dashboard" className="flex items-center gap-2 text-base font-medium text-slate-600">
-                    <User className="h-4 w-4" />
-                    {user?.name}
-                  </Link>
-                  <Button
-                    variant="ghost"
-                    className="w-full justify-start"
-                    onClick={() => logout()}
-                  >
-                    Log out
-                  </Button>
-                </div>
-              </>
-            ) : (
-              <>
-                <Link
-                  to="/pricing"
-                  className="text-base font-medium text-slate-600"
-                >
-                  Pricing
-                </Link>
-                <div className="flex flex-col gap-2 mt-4">
-                  <Link to="/login">
-                    <Button variant="ghost" className="w-full justify-start">
-                      Log in
-                    </Button>
-                  </Link>
-                  <Link to="/signup">
-                    <Button className="w-full">Get Started</Button>
-                  </Link>
-                </div>
-              </>
-            )}
-          </nav>
-        </div>
+      {open && (
+        <nav className="flex flex-col gap-1 border-t border-[var(--color-rule)] bg-[var(--color-paper)] px-5 py-4 md:hidden" aria-label="Mobile navigation">
+          <Link to="/books" onClick={() => setOpen(false)} className="min-h-11 py-2.5 font-semibold">Explore books</Link>
+          {isAuthenticated && <Link to="/dashboard" onClick={() => setOpen(false)} className="min-h-11 py-2.5 font-semibold">My books</Link>}
+          <Link to="/start-writing" onClick={() => setOpen(false)} className="story-action my-2 self-start">Write a book ↗</Link>
+          {isAuthenticated ? <button type="button" onClick={() => { setOpen(false); void logout(); }} className="min-h-11 self-start font-semibold">Sign out</button> : <Link to="/login" onClick={() => setOpen(false)} className="min-h-11 py-2.5 font-semibold">Sign in</Link>}
+        </nav>
       )}
     </header>
   );

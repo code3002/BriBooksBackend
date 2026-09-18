@@ -1,9 +1,11 @@
 import { Request, Response, NextFunction } from 'express';
-import jwt from 'jsonwebtoken';
+import { createClerkClient, verifyToken } from '@clerk/backend';
+import { PrismaClient } from '@prisma/client';
 import { AuthTokenPayload, UserRole } from '../types';
 import { AuthenticationError, AuthorizationError } from '../utils/errors';
 
-// Extend Express Request to include user
+const prisma = new PrismaClient();
+
 declare global {
     namespace Express {
         interface Request {
@@ -12,78 +14,86 @@ declare global {
     }
 }
 
-// JWT Authentication Middleware
-export const authenticate = async (
-    req: Request,
-    _res: Response,
-    next: NextFunction
-) => {
+export const authenticate = async (req: Request, _res: Response, next: NextFunction) => {
     try {
-        const authHeader = req.headers.authorization;
-
-        if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        const header = req.headers.authorization;
+        if (!header?.startsWith('Bearer ')) {
             throw new AuthenticationError('No token provided');
         }
 
-        const token = authHeader.substring(7);
-        const jwtSecret = process.env.JWT_SECRET;
-
-        if (!jwtSecret) {
-            throw new Error('JWT_SECRET not configured');
+        const secretKey = process.env.CLERK_SECRET_KEY;
+        if (!secretKey) {
+            throw new Error('CLERK_SECRET_KEY not configured');
+        }
+        const token = header.slice(7);
+        const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+        const authorizedParties = process.env.NODE_ENV === 'production'
+            ? [frontendUrl]
+            : [frontendUrl, 'http://localhost:5173', 'http://127.0.0.1:5173'];
+        let claims;
+        try {
+            claims = await verifyToken(token, {
+                secretKey,
+                authorizedParties,
+            });
+        } catch {
+            throw new AuthenticationError('Invalid Clerk token');
+        }
+        if (!claims.sub) {
+            throw new AuthenticationError('Invalid Clerk token');
         }
 
-        const decoded = jwt.verify(token, jwtSecret) as AuthTokenPayload;
-        req.user = decoded;
+        let user = await prisma.user.findUnique({ where: { clerkId: claims.sub } });
+        if (!user) {
+            const clerkUser = await createClerkClient({ secretKey }).users.getUser(claims.sub);
+            const emailAddress = clerkUser.primaryEmailAddress;
+            if (!emailAddress || emailAddress.verification?.status !== 'verified') {
+                throw new AuthenticationError('A verified email address is required');
+            }
+            const email = emailAddress.emailAddress;
+            const existing = await prisma.user.findUnique({ where: { email } });
+            if (existing?.clerkId && existing.clerkId !== claims.sub) {
+                throw new AuthenticationError('Email is linked to another account');
+            }
+            user = existing
+                ? await prisma.user.update({ where: { id: existing.id }, data: { clerkId: claims.sub, emailVerified: true } })
+                : await prisma.user.upsert({
+                    where: { clerkId: claims.sub },
+                    update: {},
+                    create: {
+                        clerkId: claims.sub,
+                        email,
+                        username: `clerk_${claims.sub}`,
+                        firstName: clerkUser.firstName || email.split('@')[0],
+                        lastName: clerkUser.lastName || '',
+                        avatarUrl: clerkUser.imageUrl,
+                        emailVerified: true,
+                    },
+                });
+        }
+        req.user = { userId: user.id, email: user.email, role: user.role as UserRole };
         next();
     } catch (error) {
-        if (error instanceof jwt.JsonWebTokenError) {
-            next(new AuthenticationError('Invalid token'));
-        } else if (error instanceof jwt.TokenExpiredError) {
-            next(new AuthenticationError('Token expired'));
-        } else {
-            next(error);
-        }
+        next(error);
     }
 };
 
-// Role-based Authorization Middleware
+export const optionalAuthenticate = (req: Request, res: Response, next: NextFunction) => {
+    if (!req.headers.authorization) {
+        next();
+        return;
+    }
+    void authenticate(req, res, next);
+};
+
 export const authorize = (...allowedRoles: UserRole[]) => {
     return (req: Request, _res: Response, next: NextFunction) => {
         if (!req.user) {
             return next(new AuthenticationError('User not authenticated'));
         }
-
         if (!allowedRoles.includes(req.user.role)) {
-            return next(
-                new AuthorizationError(
-                    `Access denied. Required roles: ${allowedRoles.join(', ')}`
-                )
-            );
+            return next(new AuthorizationError(`Access denied. Required roles: ${allowedRoles.join(', ')}`));
         }
-
         next();
     };
-};
-
-// Generate JWT Token
-export const generateToken = (payload: AuthTokenPayload): string => {
-    const jwtSecret = process.env.JWT_SECRET;
-    const expiresIn = process.env.JWT_EXPIRES_IN || '7d';
-
-    if (!jwtSecret) {
-        throw new Error('JWT_SECRET not configured');
-    }
-
-    return jwt.sign(payload, jwtSecret, { expiresIn } as any);
-};
-
-// Verify JWT Token
-export const verifyToken = (token: string): AuthTokenPayload => {
-    const jwtSecret = process.env.JWT_SECRET;
-
-    if (!jwtSecret) {
-        throw new Error('JWT_SECRET not configured');
-    }
-
-    return jwt.verify(token, jwtSecret) as AuthTokenPayload;
 };

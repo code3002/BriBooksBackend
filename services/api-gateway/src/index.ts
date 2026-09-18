@@ -7,7 +7,7 @@ import dotenv from 'dotenv';
 import { createServiceLogger } from '@bribooks/shared';
 
 // Load environment variables
-dotenv.config();
+dotenv.config({ path: require('path').resolve(__dirname, '../../../.env') });
 
 const app: Application = express();
 const PORT = process.env.API_GATEWAY_PORT || 3000;

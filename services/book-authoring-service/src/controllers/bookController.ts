@@ -6,23 +6,33 @@ import { AgeGroup } from '@bribooks/shared';
 const createBookSchema = z.object({
     body: z.object({
         title: z.string().min(1, 'Title is required').max(200),
-        description: z.string().min(1, 'Description is required').max(1000),
+        description: z.string().max(1000).default(''),
         ageGroup: z.nativeEnum(AgeGroup),
         tags: z.array(z.string()).optional(),
+        themeId: z.string().max(80).optional(),
     }),
 });
 
 const updateBookSchema = z.object({
     body: z.object({
         title: z.string().min(1).max(200).optional(),
-        description: z.string().min(1).max(1000).optional(),
+        description: z.string().max(1000).optional(),
         ageGroup: z.nativeEnum(AgeGroup).optional(),
         tags: z.array(z.string()).optional(),
         coverImageUrl: z.string().url().optional(),
+        themeId: z.string().max(80).optional(),
     }),
 });
 
 export class BookController {
+    async getMyBooks(req: Request, res: Response, next: NextFunction) {
+        try {
+            const books = await bookService.getMyBooks(req.user!.userId);
+            res.json({ success: true, data: books });
+        } catch (error) {
+            next(error);
+        }
+    }
     // POST /books
     async createBook(req: Request, res: Response, next: NextFunction) {
         try {

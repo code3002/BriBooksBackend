@@ -11,6 +11,7 @@ export class BookService {
             description: string;
             ageGroup: AgeGroup;
             tags?: string[];
+            themeId?: string;
         }
     ) {
         const book = await prisma.book.create({
@@ -20,6 +21,7 @@ export class BookService {
                 authorId,
                 ageGroup: data.ageGroup,
                 tags: data.tags || [],
+                themeId: data.themeId,
                 status: BookStatus.DRAFT,
             },
             include: {
@@ -85,6 +87,7 @@ export class BookService {
             ageGroup?: AgeGroup;
             tags?: string[];
             coverImageUrl?: string;
+            themeId?: string;
         }
     ) {
         // Check ownership
@@ -116,6 +119,14 @@ export class BookService {
         });
 
         return updated;
+    }
+
+    async getMyBooks(authorId: string) {
+        return prisma.book.findMany({
+            where: { authorId },
+            include: { _count: { select: { chapters: true, reviews: true } } },
+            orderBy: { updatedAt: 'desc' },
+        });
     }
 
     // Delete book
@@ -156,8 +167,8 @@ export class BookService {
             throw new AuthorizationError('You can only publish your own books');
         }
 
-        if (book.chapters.length === 0) {
-            throw new Error('Cannot publish a book without chapters');
+        if (book.chapters.length === 0 || book.chapters.every((chapter) => !chapter.content.trim())) {
+            throw new Error('Write at least one chapter before publishing');
         }
 
         const updated = await prisma.book.update({
