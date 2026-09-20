@@ -29,18 +29,20 @@ export const authenticate = async (req: Request, _res: Response, next: NextFunct
         const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
         const authorizedParties = process.env.NODE_ENV === 'production'
             ? [frontendUrl]
-            : [frontendUrl, 'http://localhost:5173', 'http://127.0.0.1:5173'];
+            : [frontendUrl, 'http://localhost:5173', 'http://127.0.0.1:5173', 'http://localhost:5174', 'http://127.0.0.1:5174'];
         let claims;
         try {
             claims = await verifyToken(token, {
                 secretKey,
-                authorizedParties,
             });
         } catch {
             throw new AuthenticationError('Invalid Clerk token');
         }
         if (!claims.sub) {
             throw new AuthenticationError('Invalid Clerk token');
+        }
+        if (claims.azp && !authorizedParties.includes(claims.azp)) {
+            throw new AuthenticationError('Invalid Clerk token origin');
         }
 
         let user = await prisma.user.findUnique({ where: { clerkId: claims.sub } });

@@ -280,6 +280,7 @@ See `ENV_SETUP.md` for complete list of environment variables.
 Key variables:
 - `DATABASE_URL` - Neon PostgreSQL connection string
 - `GEMINI_API_KEY` - Google Gemini AI API key
+- `GEMINI_MODEL` - Gemini model name (defaults to `gemini-3.5-flash`)
 - `CLERK_SECRET_KEY` - Clerk backend secret key
 - `FRONTEND_URL` - Allowed Clerk token origin
 - Service ports for each microservice

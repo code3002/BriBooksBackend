@@ -39,7 +39,28 @@ const contentSafetySchema = z.object({
     }),
 });
 
+const transcriptionSchema = z.object({
+    body: z.object({
+        audioBase64: z.string().min(1).max(8_100_000),
+        mimeType: z.enum(['audio/webm', 'audio/ogg', 'audio/mp4', 'audio/wav', 'audio/mpeg']),
+    }),
+});
+
 export class AIController {
+    async transcribeAudio(req: Request, res: Response, next: NextFunction) {
+        try {
+            const validated = transcriptionSchema.parse({ body: req.body });
+            const result = await geminiService.transcribeAudio(
+                validated.body.audioBase64,
+                validated.body.mimeType,
+                req.user?.userId
+            );
+            res.json({ success: true, data: result });
+        } catch (error) {
+            next(error);
+        }
+    }
+
     // POST /ai/generate-story
     async generateStory(req: Request, res: Response, next: NextFunction) {
         try {
