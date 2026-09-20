@@ -3,6 +3,10 @@ import axios from "axios";
 const API_URL = "/api/ai";
 
 export const aiService = {
+  async transcribeAudio(audioBase64: string, mimeType: string) {
+    const response = await axios.post(`${API_URL}/transcribe`, { audioBase64, mimeType });
+    return response.data;
+  },
   async generateStory(prompt: string, ageGroup: string, maxLength?: number) {
     const response = await axios.post(`${API_URL}/generate-story`, {
       prompt,

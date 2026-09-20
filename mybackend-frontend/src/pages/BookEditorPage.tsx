@@ -12,7 +12,8 @@ import {
   Book,
   Settings,
   Mic,
-  MicOff,
+  Loader2,
+  Square,
 } from "lucide-react";
 import { Button } from "../components/ui/Button";
 import { ThemeSelector } from "../components/ThemeSelector";
@@ -85,6 +86,7 @@ export const BookEditorPage: React.FC = () => {
   // Voice recording
   const {
     isListening,
+    isProcessing: isVoiceProcessing,
     transcript,
     error: voiceError,
     isSupported: isVoiceSupported,
@@ -105,7 +107,7 @@ export const BookEditorPage: React.FC = () => {
     if (transcript && currentChapter) {
       setIsChapterDirty(true);
       setCurrentChapter((prev) =>
-        prev ? { ...prev, content: prev.content + transcript } : prev,
+        prev ? { ...prev, content: `${prev.content}${prev.content && !prev.content.endsWith(' ') ? ' ' : ''}${transcript}` } : prev,
       );
       resetTranscript();
     }
@@ -627,6 +629,7 @@ export const BookEditorPage: React.FC = () => {
 
                 <div className="mb-4 relative">
                   <textarea
+                    aria-describedby="voice-recording-status"
                     value={currentChapter.content}
                     onChange={(e) => {
                       setIsChapterDirty(true);
@@ -644,43 +647,42 @@ export const BookEditorPage: React.FC = () => {
                     <div className="absolute top-4 right-4">
                       <button
                         type="button"
-                        onClick={toggleListening}
-                        className={`p-3 rounded-full transition-all shadow-md ${isListening
-                          ? 'bg-red-500 hover:bg-red-600 animate-pulse'
-                          : 'bg-slate-200 hover:bg-slate-300'
+                        onClick={() => void toggleListening()}
+                        disabled={isVoiceProcessing}
+                        aria-label={isVoiceProcessing ? 'Transcribing recording' : isListening ? 'Stop voice recording' : 'Start voice recording'}
+                        aria-pressed={isListening}
+                        className={`inline-flex min-h-11 min-w-11 items-center justify-center rounded-full shadow-md transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:cursor-wait disabled:opacity-80 ${isListening
+                          ? 'bg-red-600 text-white hover:bg-red-700'
+                          : 'bg-white text-slate-700 hover:bg-slate-100'
                           }`}
-                        title={isListening ? 'Stop recording' : 'Start voice recording'}
+                        title={isVoiceProcessing ? 'Transcribing recording' : isListening ? 'Stop recording' : 'Start voice recording'}
                       >
-                        {isListening ? (
-                          <Mic className="h-5 w-5 text-white" />
+                        {isVoiceProcessing ? (
+                          <Loader2 aria-hidden="true" className="h-5 w-5 animate-spin" />
+                        ) : isListening ? (
+                          <Square aria-hidden="true" className="h-4 w-4 fill-current" />
                         ) : (
-                          <MicOff className="h-5 w-5 text-slate-600" />
+                          <Mic aria-hidden="true" className="h-5 w-5" />
                         )}
                       </button>
-
-                      {/* Tooltip */}
-                      {isListening && (
-                        <div className="absolute top-full mt-2 right-0 bg-green-600 text-white px-3 py-1.5 rounded-lg text-sm whitespace-nowrap shadow-lg">
-                          Listening... Click to stop
-                        </div>
-                      )}
-
-                      {/* Error Display */}
-                      {voiceError && !isListening && (
-                        <div className="absolute top-full mt-2 right-0 bg-red-600 text-white px-3 py-1.5 rounded-lg text-sm max-w-xs shadow-lg">
-                          {voiceError}
-                        </div>
-                      )}
-                    </div>
-                  )}
-
-                  {/* Browser Not Supported Message */}
-                  {!isVoiceSupported && (
-                    <div className="absolute top-4 right-4 bg-yellow-100 text-yellow-800 px-3 py-1.5 rounded-lg text-sm">
-                      Voice recording not supported
                     </div>
                   )}
                 </div>
+
+                <p
+                  id="voice-recording-status"
+                  role={voiceError ? 'alert' : 'status'}
+                  aria-live="polite"
+                  className={`mb-4 min-h-5 text-sm ${voiceError ? 'font-medium text-red-700' : 'text-slate-600'}`}
+                >
+                  {voiceError || (isListening
+                    ? 'Recording… Select stop when you finish speaking.'
+                    : isVoiceProcessing
+                      ? 'Turning your speech into text…'
+                      : !isVoiceSupported
+                        ? 'Voice recording is unavailable in this browser.'
+                        : 'Use the microphone to add spoken words to this chapter.')}
+                </p>
 
                 <div className="flex flex-wrap justify-between items-center gap-3">
                   <div className="text-sm text-slate-500">

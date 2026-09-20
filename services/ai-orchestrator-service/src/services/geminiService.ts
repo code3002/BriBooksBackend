@@ -19,18 +19,33 @@ function stripMarkdownJson(text: string): string {
 }
 
 export class GeminiService {
-    private genAI: GoogleGenerativeAI;
-    private model: any;
+    private model: any | null = null;
 
-    constructor() {
+    private getModel() {
+        if (this.model) return this.model;
         const apiKey = process.env.GEMINI_API_KEY;
-
         if (!apiKey) {
             throw new Error('GEMINI_API_KEY not configured');
         }
+        const modelName = process.env.GEMINI_MODEL || 'gemini-3.5-flash';
+        this.model = new GoogleGenerativeAI(apiKey).getGenerativeModel({ model: modelName });
+        return this.model;
+    }
 
-        this.genAI = new GoogleGenerativeAI(apiKey);
-        this.model = this.genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
+    private async generateContent(input: any) {
+        let lastError: any;
+        for (let attempt = 0; attempt < 3; attempt += 1) {
+            try {
+                return await this.getModel().generateContent(input);
+            } catch (error: any) {
+                lastError = error;
+                const message = String(error?.message || '');
+                const transient = message.includes('429') || message.includes('503') || message.toLowerCase().includes('high demand');
+                if (!transient || attempt === 2) throw error;
+                await new Promise((resolve) => setTimeout(resolve, 500 * (attempt + 1)));
+            }
+        }
+        throw lastError;
     }
 
     // Generate story content
@@ -42,7 +57,7 @@ export class GeminiService {
     ) {
         try {
             const systemPrompt = getStoryGenerationPrompt(prompt, ageGroup, maxLength);
-            const result = await this.model.generateContent(systemPrompt);
+            const result = await this.generateContent(systemPrompt);
             const response = await result.response;
             const content = response.text();
 
@@ -67,7 +82,7 @@ export class GeminiService {
     async checkGrammar(text: string, userId?: string) {
         try {
             const systemPrompt = getGrammarCheckPrompt(text);
-            const result = await this.model.generateContent(systemPrompt);
+            const result = await this.generateContent(systemPrompt);
             const response = await result.response;
             const content = response.text();
 
@@ -98,7 +113,7 @@ export class GeminiService {
     async getContentSuggestions(text: string, ageGroup: AgeGroup, userId?: string) {
         try {
             const systemPrompt = getContentImprovementPrompt(text, ageGroup);
-            const result = await this.model.generateContent(systemPrompt);
+            const result = await this.generateContent(systemPrompt);
             const response = await result.response;
             const suggestions = response.text();
 
@@ -124,7 +139,7 @@ export class GeminiService {
     ) {
         try {
             const systemPrompt = getIllustrationPrompt(chapterContent, ageGroup);
-            const result = await this.model.generateContent(systemPrompt);
+            const result = await this.generateContent(systemPrompt);
             const response = await result.response;
             const descriptions = response.text();
 
@@ -146,12 +161,12 @@ export class GeminiService {
     async checkContentSafety(text: string, ageGroup: AgeGroup, userId?: string) {
         try {
             const systemPrompt = getContentSafetyPrompt(text, ageGroup);
-            const result = await this.model.generateContent(systemPrompt);
+            const result = await this.generateContent(systemPrompt);
             const response = await result.response;
             const content = response.text();
 
             // Parse JSON response (strip markdown code fences if present)
-            let safetyResult = {
+            let safetyResult: { isSafe: boolean; issues: string[]; recommendations: string } = {
                 isSafe: true,
                 issues: [],
                 recommendations: '',
@@ -165,8 +180,12 @@ export class GeminiService {
                     recommendations: parsed.recommendations || '',
                 };
             } catch (e) {
-                // If parsing fails, assume safe
-                safetyResult.isSafe = true;
+                // A malformed provider response cannot establish that child-facing content is safe.
+                safetyResult = {
+                    isSafe: false,
+                    issues: ['Safety check could not be completed'],
+                    recommendations: 'Please retry the safety check before publishing.',
+                };
             }
 
             // Log AI usage
@@ -178,6 +197,33 @@ export class GeminiService {
             });
 
             return safetyResult;
+        } catch (error: any) {
+            throw new ExternalServiceError('Gemini AI', error.message);
+        }
+    }
+
+    async transcribeAudio(audioBase64: string, mimeType: string, userId?: string) {
+        try {
+            const result = await this.generateContent([
+                {
+                    inlineData: {
+                        data: audioBase64,
+                        mimeType,
+                    },
+                },
+                {
+                    text: 'Transcribe this recording exactly as spoken. Return only the transcript, without commentary or quotation marks.',
+                },
+            ]);
+            const response = await result.response;
+            const transcript = response.text().trim();
+            await this.logAIUsage({
+                userId,
+                requestType: 'audio_transcription',
+                prompt: `[audio: ${mimeType}]`,
+                response: transcript,
+            });
+            return { transcript };
         } catch (error: any) {
             throw new ExternalServiceError('Gemini AI', error.message);
         }
