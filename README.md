@@ -4,6 +4,10 @@ A comprehensive microservices-based backend for BriBooks, a children's book auth
 
 ## 🏗️ Architecture
 
+![BriBooks high-level design](docs/architecture/bribooks-hld.png)
+
+The editable source is [`docs/architecture/bribooks-hld.excalidraw`](docs/architecture/bribooks-hld.excalidraw): open it at [excalidraw.com](https://excalidraw.com) (File → Open).
+
 This backend follows a microservices architecture with the following services:
 
 - **API Gateway** (Port 3000) - Central entry point with routing and rate limiting
